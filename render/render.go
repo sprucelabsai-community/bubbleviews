@@ -37,6 +37,10 @@ func renderNode(node bubbleviews.Node, parentSize bubbleviews.Size) string {
 		return renderFlex(n, parentSize)
 	case *bubbleviews.FlexNode:
 		return renderFlex(*n, parentSize)
+	case bubbleviews.FlowNode:
+		return renderFlow(n, parentSize)
+	case *bubbleviews.FlowNode:
+		return renderFlow(*n, parentSize)
 	case bubbleviews.TextNode:
 		return renderText(n, parentSize)
 	case *bubbleviews.TextNode:
@@ -229,6 +233,76 @@ func renderFlexColumn(flex bubbleviews.FlexNode, parentSize bubbleviews.Size) st
 	return lipgloss.JoinVertical(lipgloss.Left, segments...)
 }
 
+func renderFlow(flow bubbleviews.FlowNode, parentSize bubbleviews.Size) string {
+	if len(flow.Items) == 0 {
+		return ""
+	}
+
+	itemSpacing := flow.ItemSpacing
+	if itemSpacing < 0 {
+		itemSpacing = 0
+	}
+	rowSpacing := flow.RowSpacing
+	if rowSpacing < 0 {
+		rowSpacing = 0
+	}
+
+	minWidth := flow.ItemMinWidth
+	if minWidth < 1 {
+		minWidth = 1
+	}
+
+	maxColumns := len(flow.Items)
+	if parentSize.Width > 0 {
+		available := parentSize.Width + itemSpacing
+		denominator := minWidth + itemSpacing
+		if denominator > 0 {
+			columns := available / denominator
+			if columns < 1 {
+				columns = 1
+			}
+			if columns < maxColumns {
+				maxColumns = columns
+			}
+		}
+	}
+	if maxColumns < 1 {
+		maxColumns = 1
+	}
+
+	var columnWidth int
+	if parentSize.Width > 0 {
+		columnWidth = parentSize.Width - itemSpacing*(maxColumns-1)
+		if columnWidth < 0 {
+			columnWidth = 0
+		}
+		if maxColumns > 0 {
+			columnWidth = columnWidth / maxColumns
+		}
+	}
+
+	rows := make([]string, 0, (len(flow.Items)+maxColumns-1)/maxColumns)
+
+	for start := 0; start < len(flow.Items); start += maxColumns {
+		end := start + maxColumns
+		if end > len(flow.Items) {
+			end = len(flow.Items)
+		}
+
+		segments := make([]string, 0, (end-start)*2-1)
+		for i := start; i < end; i++ {
+			size := bubbleviews.Size{Width: columnWidth, Height: parentSize.Height}
+			segment := renderNode(flow.Items[i], size)
+			segments = append(segments, segment)
+		}
+
+		row := joinWithSpacing(segments, itemSpacing, lipgloss.JoinHorizontal, lipgloss.Top)
+		rows = append(rows, row)
+	}
+
+	return joinWithSpacing(rows, rowSpacing, lipgloss.JoinVertical, lipgloss.Left)
+}
+
 func computeFlexWidths(flex bubbleviews.FlexNode, parentWidth int) []int {
 	count := len(flex.Items)
 	widths := make([]int, count)
@@ -362,6 +436,25 @@ func wrapText(text string, width int) []string {
 	lines = append(lines, current)
 
 	return lines
+}
+
+func joinWithSpacing(segments []string, spacing int, join func(lipgloss.Position, ...string) string, pos lipgloss.Position) string {
+	if len(segments) == 0 {
+		return ""
+	}
+	if spacing <= 0 || len(segments) == 1 {
+		return join(pos, segments...)
+	}
+
+	spacer := lipgloss.NewStyle().Width(spacing).Render("")
+	withSpacing := make([]string, 0, len(segments)*2-1)
+	for i, segment := range segments {
+		if i > 0 {
+			withSpacing = append(withSpacing, spacer)
+		}
+		withSpacing = append(withSpacing, segment)
+	}
+	return join(pos, withSpacing...)
 }
 
 func mapBorderStyle(style bubbleviews.BorderStyle) *lipgloss.Border {

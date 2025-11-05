@@ -76,11 +76,12 @@ mutates the model it receives.
 
 ## Examples
 
-We’re vibe-coding this project—examples are our tests.
-
 - [`examples/hello`](examples/hello): full-screen box with a centered “Hello World” button.
 - [`examples/tasks`](examples/tasks): split-pane dashboard showing outstanding and completed checklists side-by-side.
 - [`examples/interactivity`](examples/interactivity): keyboard-driven command list showcasing interactive focus/selection.
+- [`examples/dashboard`](examples/dashboard): recorder dashboard mock with dynamic camera columns and status metrics.
+
+We’re vibe-coding this project—examples are our tests.
 
 
 ---

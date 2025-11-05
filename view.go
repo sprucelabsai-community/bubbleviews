@@ -47,6 +47,16 @@ type FlexNode struct {
 
 func (FlexNode) isNode() {}
 
+// FlowNode arranges child nodes in rows, wrapping when exceeding available width.
+type FlowNode struct {
+	ItemMinWidth int
+	ItemSpacing  int
+	RowSpacing   int
+	Items        []Node
+}
+
+func (FlowNode) isNode() {}
+
 // FlexItem references a node within a Flex layout.
 type FlexItem struct {
 	Node   Node
