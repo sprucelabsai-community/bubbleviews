@@ -22,3 +22,4 @@
 - When introducing new visual patterns, prefer building helpers that emit existing node types (`BoxNode`, `FlexNode`, `TextNode`) before adding new renderer cases.
 - Keep generated output ASCII-only unless a specific feature warrants otherwise.
 - Update this brief if the overall philosophy shifts, so future agents stay aligned.
+- When debugging or verifying behavior, articulate predictions before modifying code. Use these expectations as comprehension checks and avoid making changes mid-check.

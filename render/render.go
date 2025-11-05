@@ -41,6 +41,10 @@ func renderNode(node bubbleviews.Node, parentSize bubbleviews.Size) string {
 		return renderFlow(n, parentSize)
 	case *bubbleviews.FlowNode:
 		return renderFlow(*n, parentSize)
+	case bubbleviews.ASCIIArtNode:
+		return renderASCIIArt(n, parentSize)
+	case *bubbleviews.ASCIIArtNode:
+		return renderASCIIArt(*n, parentSize)
 	case bubbleviews.TextNode:
 		return renderText(n, parentSize)
 	case *bubbleviews.TextNode:
@@ -301,6 +305,38 @@ func renderFlow(flow bubbleviews.FlowNode, parentSize bubbleviews.Size) string {
 	}
 
 	return joinWithSpacing(rows, rowSpacing, lipgloss.JoinVertical, lipgloss.Left)
+}
+
+func renderASCIIArt(art bubbleviews.ASCIIArtNode, parentSize bubbleviews.Size) string {
+	if len(art.Lines) == 0 {
+		return ""
+	}
+
+	style := lipgloss.NewStyle()
+	if color := string(art.Color); color != "" {
+		style = style.Foreground(lipgloss.Color(color))
+	}
+	if art.Bold {
+		style = style.Bold(true)
+	}
+
+	position := mapHorizontal(art.Align)
+	if art.Align == "" {
+		position = lipgloss.Left
+	}
+
+	styled := make([]string, len(art.Lines))
+	for i, line := range art.Lines {
+		rendered := style.Render(line)
+		styled[i] = rendered
+	}
+
+	block := strings.Join(styled, "\n")
+	if parentSize.Width > 0 {
+		return lipgloss.PlaceHorizontal(parentSize.Width, position, block)
+	}
+
+	return block
 }
 
 func computeFlexWidths(flex bubbleviews.FlexNode, parentWidth int) []int {

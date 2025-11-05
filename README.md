@@ -80,6 +80,7 @@ mutates the model it receives.
 - [`examples/tasks`](examples/tasks): split-pane dashboard showing outstanding and completed checklists side-by-side.
 - [`examples/interactivity`](examples/interactivity): keyboard-driven command list showcasing interactive focus/selection.
 - [`examples/dashboard`](examples/dashboard): recorder dashboard mock with dynamic camera columns and status metrics.
+- [`examples/ascii_art`](examples/ascii_art): centered ASCII banner using the `ASCIIArtNode` helper.
 
 We’re vibe-coding this project—examples are our tests.
 

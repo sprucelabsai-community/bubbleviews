@@ -57,6 +57,16 @@ type FlowNode struct {
 
 func (FlowNode) isNode() {}
 
+// ASCIIArtNode renders preformatted ASCII art lines.
+type ASCIIArtNode struct {
+	Lines []string
+	Align Alignment
+	Bold  bool
+	Color Color
+}
+
+func (ASCIIArtNode) isNode() {}
+
 // FlexItem references a node within a Flex layout.
 type FlexItem struct {
 	Node   Node
