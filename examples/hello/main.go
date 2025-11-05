@@ -54,9 +54,9 @@ func main() {
 func buildHelloView(width, height int) bubbleviews.View {
 	return bubbleviews.View{
 		Size: bubbleviews.Size{Width: width, Height: height},
-		Children: []bubbleviews.ViewChild{
-			{
-				Frame: &bubbleviews.FrameView{
+		Children: []bubbleviews.Node{
+			bubbleviews.BoxNode{
+				Style: bubbleviews.BoxStyle{
 					Border:      bubbleviews.BorderThick,
 					BorderColor: bubbleviews.Color("63"),
 					Padding: bubbleviews.Padding{
@@ -67,26 +67,24 @@ func buildHelloView(width, height int) bubbleviews.View {
 					},
 					FillWidth:  true,
 					FillHeight: true,
-					Content: &bubbleviews.View{
-						Children: []bubbleviews.ViewChild{
-							{
-								Placement: &bubbleviews.PlacementView{
-									HAlign: bubbleviews.AlignCenter,
-									VAlign: bubbleviews.AlignCenter,
-									Content: &bubbleviews.View{
-										Children: []bubbleviews.ViewChild{
-											{
-												Button: &bubbleviews.ButtonView{
-													Label:       "Hello World",
-													Border:      bubbleviews.BorderThin,
-													BorderColor: bubbleviews.Color("205"),
-													Padding: bubbleviews.Padding{
-														Left:  2,
-														Right: 2,
-													},
-												},
-											},
-										},
+					HAlign:     bubbleviews.AlignCenter,
+					VAlign:     bubbleviews.AlignCenter,
+				},
+				Content: bubbleviews.View{
+					Children: []bubbleviews.Node{
+						bubbleviews.BoxNode{
+							Style: bubbleviews.BoxStyle{
+								Border:      bubbleviews.BorderThin,
+								BorderColor: bubbleviews.Color("205"),
+								Padding: bubbleviews.Padding{
+									Left:  2,
+									Right: 2,
+								},
+							},
+							Content: bubbleviews.View{
+								Children: []bubbleviews.Node{
+									bubbleviews.TextNode{
+										Value: "Hello World",
 									},
 								},
 							},

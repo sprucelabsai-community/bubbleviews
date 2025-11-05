@@ -52,11 +52,83 @@ func main() {
 }
 
 func buildTasksView(width, height int) bubbleviews.View {
+	outstandingList := bubbleviews.ListView{
+		Title:      "Outstanding Tasks",
+		TitleColor: bubbleviews.Color("69"),
+		Items: []string{
+			"Review camera calibration",
+			"Sync ingest pipeline with S3",
+			"Schedule QA playback session",
+			"Confirm alert latency thresholds",
+		},
+	}.Node()
+
+	completedList := bubbleviews.ListView{
+		Title:      "Completed Tasks",
+		TitleColor: bubbleviews.Color("108"),
+		ItemColor:  bubbleviews.Color("244"),
+		Items: []string{
+			"Deploy recorder v1.4.2",
+			"Archive April footage",
+			"Send daily digest to ops",
+			"Reconcile storage billing",
+		},
+	}.Node()
+
+	columns := bubbleviews.FlexNode{
+		Direction: bubbleviews.FlexDirectionRow,
+		Spacing:   4,
+		Items: []bubbleviews.FlexItem{
+			{
+				Node: bubbleviews.BoxNode{
+					Style: bubbleviews.BoxStyle{
+						Border:      bubbleviews.BorderThin,
+						BorderColor: bubbleviews.Color("69"),
+						Padding: bubbleviews.Padding{
+							Top:    1,
+							Bottom: 1,
+							Left:   2,
+							Right:  2,
+						},
+						FillWidth:  true,
+						FillHeight: true,
+					},
+					Content: bubbleviews.View{
+						Children: []bubbleviews.Node{
+							outstandingList,
+						},
+					},
+				},
+			},
+			{
+				Node: bubbleviews.BoxNode{
+					Style: bubbleviews.BoxStyle{
+						Border:      bubbleviews.BorderThin,
+						BorderColor: bubbleviews.Color("108"),
+						Padding: bubbleviews.Padding{
+							Top:    1,
+							Bottom: 1,
+							Left:   2,
+							Right:  2,
+						},
+						FillWidth:  true,
+						FillHeight: true,
+					},
+					Content: bubbleviews.View{
+						Children: []bubbleviews.Node{
+							completedList,
+						},
+					},
+				},
+			},
+		},
+	}
+
 	return bubbleviews.View{
 		Size: bubbleviews.Size{Width: width, Height: height},
-		Children: []bubbleviews.ViewChild{
-			{
-				Frame: &bubbleviews.FrameView{
+		Children: []bubbleviews.Node{
+			bubbleviews.BoxNode{
+				Style: bubbleviews.BoxStyle{
 					Border:      bubbleviews.BorderThick,
 					BorderColor: bubbleviews.Color("63"),
 					Padding: bubbleviews.Padding{
@@ -67,89 +139,10 @@ func buildTasksView(width, height int) bubbleviews.View {
 					},
 					FillWidth:  true,
 					FillHeight: true,
-					Content: &bubbleviews.View{
-						Children: []bubbleviews.ViewChild{
-							{
-								Columns: &bubbleviews.ColumnsView{
-									Spacing: 4,
-									Columns: []bubbleviews.ColumnView{
-										{
-											Content: &bubbleviews.View{
-												Children: []bubbleviews.ViewChild{
-													{
-														Frame: &bubbleviews.FrameView{
-															Border:      bubbleviews.BorderThin,
-															BorderColor: bubbleviews.Color("69"),
-															Padding: bubbleviews.Padding{
-																Top:    1,
-																Bottom: 1,
-																Left:   2,
-																Right:  2,
-															},
-															FillWidth:  true,
-															FillHeight: true,
-															Content: &bubbleviews.View{
-																Children: []bubbleviews.ViewChild{
-																	{
-																		List: &bubbleviews.ListView{
-																			Title:      "Outstanding Tasks",
-																			TitleColor: bubbleviews.Color("69"),
-																			Items: []string{
-																				"Review camera calibration",
-																				"Sync ingest pipeline with S3",
-																				"Schedule QA playback session",
-																				"Confirm alert latency thresholds",
-																			},
-																		},
-																	},
-																},
-															},
-														},
-													},
-												},
-											},
-										},
-										{
-											Content: &bubbleviews.View{
-												Children: []bubbleviews.ViewChild{
-													{
-														Frame: &bubbleviews.FrameView{
-															Border:      bubbleviews.BorderThin,
-															BorderColor: bubbleviews.Color("108"),
-															Padding: bubbleviews.Padding{
-																Top:    1,
-																Bottom: 1,
-																Left:   2,
-																Right:  2,
-															},
-															FillWidth:  true,
-															FillHeight: true,
-															Content: &bubbleviews.View{
-																Children: []bubbleviews.ViewChild{
-																	{
-																		List: &bubbleviews.ListView{
-																			Title:      "Completed Tasks",
-																			TitleColor: bubbleviews.Color("108"),
-																			ItemColor:  bubbleviews.Color("244"),
-																			Items: []string{
-																				"Deploy recorder v1.4.2",
-																				"Archive April footage",
-																				"Send daily digest to ops",
-																				"Reconcile storage billing",
-																			},
-																		},
-																	},
-																},
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
+				},
+				Content: bubbleviews.View{
+					Children: []bubbleviews.Node{
+						columns,
 					},
 				},
 			},

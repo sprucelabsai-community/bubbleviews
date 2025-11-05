@@ -7,7 +7,7 @@
 - Examples drive development. We vibe-code new features by adding `examples/<name>` programs instead of formal unit tests.
 
 ## Render Model Expectations
-- `View` nodes can be nested via `ViewChild` unions. Each child populates exactly one concrete component (`Frame`, `Placement`, `Button`, etc.).
+- `View` nests `Node` interfaces. Current primitives are `BoxNode`, `FlexNode`, and `TextNode`; higher-level helpers (like `ListView`) return these nodes.
 - Components describe intent only: borders use symbolic enums, colours are arbitrary strings, alignment is semantic (`AlignStart`, `AlignCenter`, `AlignEnd`).
 - Renderers are responsible for translating the model into terminal output. Keep renderer logic pure and side-effect free where possible.
 
@@ -19,6 +19,6 @@
 
 ## Collaboration Notes
 - Prefer expanding the render model over sprinkling conditional logic in renderers.
-- When introducing new visual patterns, define fresh component structs (e.g. `ListView`, `TextBlockView`) and adapt the renderer accordingly.
+- When introducing new visual patterns, prefer building helpers that emit existing node types (`BoxNode`, `FlexNode`, `TextNode`) before adding new renderer cases.
 - Keep generated output ASCII-only unless a specific feature warrants otherwise.
 - Update this brief if the overall philosophy shifts, so future agents stay aligned.

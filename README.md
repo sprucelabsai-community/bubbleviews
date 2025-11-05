@@ -4,7 +4,7 @@ Pure data render models for Bubble Tea + Lip Gloss. Define your interface as Go
 structs, hand it to a renderer, and let Bubble Tea do nothing more than ferry
 events and repaint strings.
 
-- **Render model first.** UI is expressed as immutable structs in `view.go`.
+- **Render model first.** Compose Box, Flex, and Text nodes defined in `view.go`.
 - **Renderer second.** `render.Render` walks the model and emits Lip Gloss markup.
 - **Bubble Tea last.** The Bubble Tea program simply caches the latest render model.
 
@@ -36,32 +36,28 @@ All layout intent lives in a set of plain structs:
 ```go
 view := bubbleviews.View{
 	Size: bubbleviews.Size{Width: width, Height: height},
-	Children: []bubbleviews.ViewChild{
-		{
-			Frame: &bubbleviews.FrameView{
+	Children: []bubbleviews.Node{
+		bubbleviews.BoxNode{
+			Style: bubbleviews.BoxStyle{
 				Border:      bubbleviews.BorderThick,
 				BorderColor: bubbleviews.Color("63"),
 				Padding:     bubbleviews.Padding{Top: 1, Bottom: 1, Left: 2, Right: 2},
 				FillWidth:   true,
 				FillHeight:  true,
-				Content: &bubbleviews.View{
-					Children: []bubbleviews.ViewChild{
-						{
-							Placement: &bubbleviews.PlacementView{
-								HAlign: bubbleviews.AlignCenter,
-								VAlign: bubbleviews.AlignCenter,
-								Content: &bubbleviews.View{
-									Children: []bubbleviews.ViewChild{
-										{
-											Button: &bubbleviews.ButtonView{
-												Label:       "Hello World",
-												Border:      bubbleviews.BorderThin,
-												BorderColor: bubbleviews.Color("205"),
-												Padding:     bubbleviews.Padding{Left: 2, Right: 2},
-											},
-										},
-									},
-								},
+				HAlign:      bubbleviews.AlignCenter,
+				VAlign:      bubbleviews.AlignCenter,
+			},
+			Content: bubbleviews.View{
+				Children: []bubbleviews.Node{
+					bubbleviews.BoxNode{
+						Style: bubbleviews.BoxStyle{
+							Border:      bubbleviews.BorderThin,
+							BorderColor: bubbleviews.Color("205"),
+							Padding:     bubbleviews.Padding{Left: 2, Right: 2},
+						},
+						Content: bubbleviews.View{
+							Children: []bubbleviews.Node{
+								bubbleviews.TextNode{Value: "Hello World"},
 							},
 						},
 					},
@@ -82,10 +78,8 @@ mutates the model it receives.
 
 We’re vibe-coding this project—examples are our tests.
 
-- [`examples/hello`](examples/hello): thick frame stretched to the terminal with
-  a centered “Hello World” button.
-- [`examples/tasks`](examples/tasks): split pane dashboard showing outstanding
-  and completed checklists side-by-side.
+- [`examples/hello`](examples/hello): full-screen box with a centered “Hello World” button.
+- [`examples/tasks`](examples/tasks): split-pane dashboard showing outstanding and completed checklists side-by-side.
 
 
 ---

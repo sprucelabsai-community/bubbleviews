@@ -19,7 +19,7 @@ func renderView(view bubbleviews.View) string {
 
 	outputs := make([]string, 0, len(view.Children))
 	for _, child := range view.Children {
-		if rendered := renderChild(child, view.Size); rendered != "" {
+		if rendered := renderNode(child, view.Size); rendered != "" {
 			outputs = append(outputs, rendered)
 		}
 	}
@@ -27,156 +27,159 @@ func renderView(view bubbleviews.View) string {
 	return lipgloss.JoinVertical(lipgloss.Left, outputs...)
 }
 
-func renderChild(child bubbleviews.ViewChild, parentSize bubbleviews.Size) string {
-	switch {
-	case child.Frame != nil:
-		return renderFrame(*child.Frame, parentSize)
-	case child.Placement != nil:
-		return renderPlacement(*child.Placement, parentSize)
-	case child.Button != nil:
-		return renderButton(*child.Button)
-	case child.Columns != nil:
-		return renderColumns(*child.Columns, parentSize)
-	case child.List != nil:
-		return renderList(*child.List, parentSize)
+func renderNode(node bubbleviews.Node, parentSize bubbleviews.Size) string {
+	switch n := node.(type) {
+	case bubbleviews.BoxNode:
+		return renderBox(n, parentSize)
+	case *bubbleviews.BoxNode:
+		return renderBox(*n, parentSize)
+	case bubbleviews.FlexNode:
+		return renderFlex(n, parentSize)
+	case *bubbleviews.FlexNode:
+		return renderFlex(*n, parentSize)
+	case bubbleviews.TextNode:
+		return renderText(n, parentSize)
+	case *bubbleviews.TextNode:
+		return renderText(*n, parentSize)
 	default:
 		return ""
 	}
 }
 
-func renderFrame(frame bubbleviews.FrameView, parentSize bubbleviews.Size) string {
+func renderBox(box bubbleviews.BoxNode, parentSize bubbleviews.Size) string {
 	style := lipgloss.NewStyle()
 
-	if border := mapBorderStyle(frame.Border); border != nil {
+	if border := mapBorderStyle(box.Style.Border); border != nil {
 		style = style.BorderStyle(*border)
 	}
 
-	if color := string(frame.BorderColor); color != "" {
+	if color := string(box.Style.BorderColor); color != "" {
 		style = style.BorderForeground(lipgloss.Color(color))
 	}
 
-	style = style.Padding(frame.Padding.Top, frame.Padding.Right, frame.Padding.Bottom, frame.Padding.Left)
+	style = style.Padding(
+		box.Style.Padding.Top,
+		box.Style.Padding.Right,
+		box.Style.Padding.Bottom,
+		box.Style.Padding.Left,
+	)
 
-	interiorWidth := 0
-	if frame.FillWidth && parentSize.Width > 0 {
-		interiorWidth = max(parentSize.Width-2, 0)
-	} else if frame.Content != nil && frame.Content.Size.Width > 0 {
-		interiorWidth = frame.Content.Size.Width + frame.Padding.Left + frame.Padding.Right
+	contentWidth := box.Content.Size.Width
+	if box.Style.FillWidth && parentSize.Width > 0 {
+		contentWidth = max(parentSize.Width-box.Style.Padding.Left-box.Style.Padding.Right-2, 0)
 	}
-	if interiorWidth > 0 {
-		style = style.Width(interiorWidth)
-	}
-
-	interiorHeight := 0
-	if frame.FillHeight && parentSize.Height > 0 {
-		interiorHeight = max(parentSize.Height-2, 0)
-	} else if frame.Content != nil && frame.Content.Size.Height > 0 {
-		interiorHeight = frame.Content.Size.Height + frame.Padding.Top + frame.Padding.Bottom
-	}
-	if interiorHeight > 0 {
-		style = style.Height(interiorHeight)
+	if contentWidth < 0 {
+		contentWidth = 0
 	}
 
-	if frame.Content == nil {
+	contentHeight := box.Content.Size.Height
+	if box.Style.FillHeight && parentSize.Height > 0 {
+		contentHeight = max(parentSize.Height-box.Style.Padding.Top-box.Style.Padding.Bottom-2, 0)
+	}
+	if contentHeight < 0 {
+		contentHeight = 0
+	}
+
+	totalWidth := 0
+	if contentWidth > 0 {
+		totalWidth = contentWidth + box.Style.Padding.Left + box.Style.Padding.Right
+	}
+	if box.Style.FillWidth && parentSize.Width > 0 {
+		totalWidth = max(parentSize.Width-2, 0)
+	}
+	if totalWidth > 0 {
+		style = style.Width(totalWidth)
+	}
+
+	totalHeight := 0
+	if contentHeight > 0 {
+		totalHeight = contentHeight + box.Style.Padding.Top + box.Style.Padding.Bottom
+	}
+	if box.Style.FillHeight && parentSize.Height > 0 {
+		totalHeight = max(parentSize.Height-2, 0)
+	}
+	if totalHeight > 0 {
+		style = style.Height(totalHeight)
+	}
+
+	if len(box.Content.Children) == 0 {
 		return style.Render("")
 	}
 
-	contentWidth := 0
-	if frame.Content.Size.Width > 0 {
-		contentWidth = frame.Content.Size.Width
-	} else if interiorWidth > 0 {
-		contentWidth = max(interiorWidth-frame.Padding.Left-frame.Padding.Right, 0)
-	}
-
-	contentHeight := 0
-	if frame.Content.Size.Height > 0 {
-		contentHeight = frame.Content.Size.Height
-	} else if interiorHeight > 0 {
-		contentHeight = max(interiorHeight-frame.Padding.Top-frame.Padding.Bottom, 0)
-	}
-
-	contentView := *frame.Content
+	contentView := box.Content
 	contentView.Size = bubbleviews.Size{
 		Width:  contentWidth,
 		Height: contentHeight,
 	}
 
-	return style.Render(renderView(contentView))
+	contentRendered := renderView(contentView)
+	if contentRendered == "" {
+		return style.Render("")
+	}
+
+	widthForAlign := contentWidth
+	if widthForAlign == 0 {
+		widthForAlign = lipgloss.Width(contentRendered)
+	}
+	heightForAlign := contentHeight
+	if heightForAlign == 0 {
+		heightForAlign = lipgloss.Height(contentRendered)
+	}
+
+	if box.Style.HAlign != bubbleviews.AlignStart || box.Style.VAlign != bubbleviews.AlignStart {
+		contentRendered = lipgloss.Place(
+			max(widthForAlign, lipgloss.Width(contentRendered)),
+			max(heightForAlign, lipgloss.Height(contentRendered)),
+			mapHorizontal(box.Style.HAlign),
+			mapVertical(box.Style.VAlign),
+			contentRendered,
+		)
+	} else if widthForAlign > 0 {
+		contentRendered = lipgloss.Place(
+			widthForAlign,
+			lipgloss.Height(contentRendered),
+			lipgloss.Left,
+			lipgloss.Top,
+			contentRendered,
+		)
+	}
+
+	return style.Render(contentRendered)
 }
 
-func renderPlacement(placement bubbleviews.PlacementView, parentSize bubbleviews.Size) string {
-	if placement.Content == nil {
+func renderFlex(flex bubbleviews.FlexNode, parentSize bubbleviews.Size) string {
+	if len(flex.Items) == 0 {
 		return ""
 	}
 
-	areaWidth := placement.AreaWidth
-	areaHeight := placement.AreaHeight
-
-	if areaWidth == 0 {
-		areaWidth = parentSize.Width
+	switch flex.Direction {
+	case bubbleviews.FlexDirectionColumn:
+		return renderFlexColumn(flex, parentSize)
+	default:
+		return renderFlexRow(flex, parentSize)
 	}
-	if areaHeight == 0 {
-		areaHeight = parentSize.Height
-	}
-
-	contentView := *placement.Content
-	contentView.Size = bubbleviews.Size{
-		Width:  max(areaWidth, 0),
-		Height: max(areaHeight, 0),
-	}
-
-	child := renderView(contentView)
-
-	return lipgloss.Place(
-		max(areaWidth, lipgloss.Width(child)),
-		max(areaHeight, lipgloss.Height(child)),
-		mapHorizontal(placement.HAlign),
-		mapVertical(placement.VAlign),
-		child,
-	)
 }
 
-func renderButton(button bubbleviews.ButtonView) string {
-	style := lipgloss.NewStyle()
-
-	if border := mapBorderStyle(button.Border); border != nil {
-		style = style.BorderStyle(*border)
-	}
-
-	if color := string(button.BorderColor); color != "" {
-		style = style.BorderForeground(lipgloss.Color(color))
-	}
-
-	if text := string(button.TextColor); text != "" {
-		style = style.Foreground(lipgloss.Color(text))
-	}
-
-	style = style.Padding(button.Padding.Top, button.Padding.Right, button.Padding.Bottom, button.Padding.Left)
-
-	return style.Render(button.Label)
-}
-
-func renderColumns(columns bubbleviews.ColumnsView, parentSize bubbleviews.Size) string {
-	if len(columns.Columns) == 0 {
-		return ""
-	}
-
-	widths := computeColumnWidths(columns, parentSize.Width)
-
-	rendered := make([]string, len(columns.Columns))
+func renderFlexRow(flex bubbleviews.FlexNode, parentSize bubbleviews.Size) string {
+	widths := computeFlexWidths(flex, parentSize.Width)
+	rendered := make([]string, len(flex.Items))
 	maxHeight := 0
 
-	for i, col := range columns.Columns {
-		if col.Content == nil {
-			rendered[i] = lipgloss.NewStyle().Width(widths[i]).Render("")
-		} else {
-			childView := *col.Content
-			childView.Size = bubbleviews.Size{
-				Width:  widths[i],
-				Height: parentSize.Height,
-			}
+	for i, item := range flex.Items {
+		childSize := bubbleviews.Size{
+			Width:  widths[i],
+			Height: parentSize.Height,
+		}
+		rendered[i] = renderNode(item.Node, childSize)
 
-			rendered[i] = renderView(childView)
+		if widths[i] > 0 {
+			rendered[i] = lipgloss.Place(
+				widths[i],
+				lipgloss.Height(rendered[i]),
+				lipgloss.Left,
+				lipgloss.Top,
+				rendered[i],
+			)
 		}
 
 		if h := lipgloss.Height(rendered[i]); h > maxHeight {
@@ -184,29 +187,58 @@ func renderColumns(columns bubbleviews.ColumnsView, parentSize bubbleviews.Size)
 		}
 	}
 
-	segments := make([]string, 0, len(columns.Columns)*2-1)
+	segments := make([]string, 0, len(flex.Items)*2-1)
 	for i, segment := range rendered {
-		if i > 0 && columns.Spacing > 0 {
-			segments = append(segments, lipgloss.NewStyle().Width(columns.Spacing).Render(""))
+		if i > 0 && flex.Spacing > 0 {
+			segments = append(segments, lipgloss.NewStyle().Width(flex.Spacing).Render(""))
 		}
-
 		segments = append(segments, segment)
 	}
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, segments...)
 }
 
-func computeColumnWidths(columns bubbleviews.ColumnsView, parentWidth int) []int {
-	count := len(columns.Columns)
-	widths := make([]int, count)
+func renderFlexColumn(flex bubbleviews.FlexNode, parentSize bubbleviews.Size) string {
+	segments := make([]string, 0, len(flex.Items)*2-1)
 
+	for i, item := range flex.Items {
+		childSize := bubbleviews.Size{
+			Width:  parentSize.Width,
+			Height: item.Height,
+		}
+
+		segment := renderNode(item.Node, childSize)
+		if parentSize.Width > 0 {
+			segment = lipgloss.Place(
+				parentSize.Width,
+				lipgloss.Height(segment),
+				lipgloss.Left,
+				lipgloss.Top,
+				segment,
+			)
+		}
+
+		if i > 0 && flex.Spacing > 0 {
+			spacer := lipgloss.NewStyle().Height(flex.Spacing).Render("")
+			segments = append(segments, spacer)
+		}
+
+		segments = append(segments, segment)
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, segments...)
+}
+
+func computeFlexWidths(flex bubbleviews.FlexNode, parentWidth int) []int {
+	count := len(flex.Items)
+	widths := make([]int, count)
 	if count == 0 {
 		return widths
 	}
 
 	available := parentWidth
 	if available > 0 && count > 1 {
-		available -= columns.Spacing * (count - 1)
+		available -= flex.Spacing * (count - 1)
 		if available < 0 {
 			available = 0
 		}
@@ -214,17 +246,17 @@ func computeColumnWidths(columns bubbleviews.ColumnsView, parentWidth int) []int
 
 	flexible := make([]int, 0, count)
 
-	for i, col := range columns.Columns {
-		if col.Width > 0 {
+	for i, item := range flex.Items {
+		if item.Width > 0 {
 			if available > 0 {
-				if col.Width > available {
+				if item.Width > available {
 					widths[i] = available
 				} else {
-					widths[i] = col.Width
+					widths[i] = item.Width
 				}
 				available -= widths[i]
 			} else {
-				widths[i] = col.Width
+				widths[i] = item.Width
 			}
 		} else {
 			flexible = append(flexible, i)
@@ -255,65 +287,53 @@ func computeColumnWidths(columns bubbleviews.ColumnsView, parentWidth int) []int
 	return widths
 }
 
-func renderList(list bubbleviews.ListView, parentSize bubbleviews.Size) string {
-	lines := make([]string, 0, len(list.Items)+1)
+func renderText(text bubbleviews.TextNode, parentSize bubbleviews.Size) string {
+	style := lipgloss.NewStyle()
 
-	availableWidth := parentSize.Width
+	if color := string(text.Color); color != "" {
+		style = style.Foreground(lipgloss.Color(color))
+	}
 
-	if list.Title != "" {
-		style := lipgloss.NewStyle().Bold(true)
-		if color := string(list.TitleColor); color != "" {
-			style = style.Foreground(lipgloss.Color(color))
+	if text.Bold {
+		style = style.Bold(true)
+	}
+
+	width := parentSize.Width
+	prefix := text.Prefix
+	continuation := text.ContinuationPrefix
+	if continuation == "" {
+		continuation = strings.Repeat(" ", lipgloss.Width(prefix))
+	}
+
+	wrapWidth := width
+	if width > 0 {
+		prefixWidth := lipgloss.Width(prefix)
+		wrapWidth = max(width-prefixWidth, 1)
+	}
+
+	var segments []string
+	if text.Wrap && wrapWidth > 0 {
+		segments = wrapText(text.Value, wrapWidth)
+	} else {
+		segments = []string{text.Value}
+	}
+
+	lines := make([]string, len(segments))
+	for i, segment := range segments {
+		linePrefix := prefix
+		if i > 0 {
+			linePrefix = continuation
 		}
 
-		if availableWidth > 0 {
-			for _, wrapped := range wrapText(list.Title, availableWidth) {
-				lines = append(lines, style.Render(wrapped))
-			}
-		} else {
-			lines = append(lines, style.Render(list.Title))
-		}
-	}
-
-	itemStyle := lipgloss.NewStyle()
-	if color := string(list.ItemColor); color != "" {
-		itemStyle = itemStyle.Foreground(lipgloss.Color(color))
-	}
-
-	bullet := list.Bullet
-	if bullet == "" {
-		bullet = "- "
-	}
-	bulletWidth := lipgloss.Width(bullet)
-	textWidth := availableWidth - bulletWidth
-	if availableWidth <= 0 {
-		textWidth = -1
-	}
-	if textWidth < 1 && availableWidth > 0 {
-		textWidth = 1
-	}
-	bulletPadding := strings.Repeat(" ", max(bulletWidth, 0))
-
-	for _, item := range list.Items {
-		wrapped := []string{item}
-		if textWidth > 0 {
-			wrapped = wrapText(item, textWidth)
+		line := style.Render(linePrefix + segment)
+		if width > 0 {
+			line = lipgloss.PlaceHorizontal(width, mapHorizontal(text.Align), line)
 		}
 
-		for i, segment := range wrapped {
-			prefix := bullet
-			if i > 0 {
-				prefix = bulletPadding
-			}
-			lines = append(lines, itemStyle.Render(prefix+segment))
-		}
+		lines[i] = line
 	}
 
-	if len(lines) == 0 {
-		return ""
-	}
-
-	return lipgloss.JoinVertical(lipgloss.Left, lines...)
+	return strings.Join(lines, "\n")
 }
 
 func wrapText(text string, width int) []string {
