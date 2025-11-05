@@ -20,4 +20,4 @@
 - Prefer expanding the render model over sprinkling conditional logic in renderers.
 - When introducing new visual patterns, define fresh component structs (e.g. `ListView`, `TextBlockView`) and adapt the renderer accordingly.
 - Keep generated output ASCII-only unless a specific feature warrants otherwise.
-- Update this brief if the overall philosophy shifts, so future agents stay aligned.***
+- Update this brief if the overall philosophy shifts, so future agents stay aligned.
