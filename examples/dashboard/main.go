@@ -413,13 +413,6 @@ func buttonBorderColor(focused bool) bubbleviews.Color {
 	return bubbleviews.Color("240")
 }
 
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	p := tea.NewProgram(newModel(), tea.WithAltScreen())
