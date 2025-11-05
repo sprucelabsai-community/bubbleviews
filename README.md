@@ -85,9 +85,6 @@ We’re vibe-coding this project—examples are our tests.
 - [`examples/hello`](examples/hello): thick frame stretched to the terminal with
   a centered “Hello World” button.
 
-When you add a new capability, create another example program instead of a unit
-test. Use the render model to describe the UI, feed it to `render.Render`, and
-let the demo prove things out manually.
 
 ---
 
