@@ -1,6 +1,8 @@
 package render
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sprucelabsai-community/bubbleviews"
 )
@@ -33,6 +35,10 @@ func renderChild(child bubbleviews.ViewChild, parentSize bubbleviews.Size) strin
 		return renderPlacement(*child.Placement, parentSize)
 	case child.Button != nil:
 		return renderButton(*child.Button)
+	case child.Columns != nil:
+		return renderColumns(*child.Columns, parentSize)
+	case child.List != nil:
+		return renderList(*child.List, parentSize)
 	default:
 		return ""
 	}
@@ -51,30 +57,48 @@ func renderFrame(frame bubbleviews.FrameView, parentSize bubbleviews.Size) strin
 
 	style = style.Padding(frame.Padding.Top, frame.Padding.Right, frame.Padding.Bottom, frame.Padding.Left)
 
-	width := parentSize.Width
-	if !frame.FillWidth && frame.Content != nil && frame.Content.Size.Width > 0 {
-		width = frame.Content.Size.Width + 2 + frame.Padding.Left + frame.Padding.Right
+	interiorWidth := 0
+	if frame.FillWidth && parentSize.Width > 0 {
+		interiorWidth = max(parentSize.Width-2, 0)
+	} else if frame.Content != nil && frame.Content.Size.Width > 0 {
+		interiorWidth = frame.Content.Size.Width + frame.Padding.Left + frame.Padding.Right
 	}
-	if width > 0 {
-		style = style.Width(width)
+	if interiorWidth > 0 {
+		style = style.Width(interiorWidth)
 	}
 
-	height := parentSize.Height
-	if !frame.FillHeight && frame.Content != nil && frame.Content.Size.Height > 0 {
-		height = frame.Content.Size.Height + 2 + frame.Padding.Top + frame.Padding.Bottom
+	interiorHeight := 0
+	if frame.FillHeight && parentSize.Height > 0 {
+		interiorHeight = max(parentSize.Height-2, 0)
+	} else if frame.Content != nil && frame.Content.Size.Height > 0 {
+		interiorHeight = frame.Content.Size.Height + frame.Padding.Top + frame.Padding.Bottom
 	}
-	if height > 0 {
-		style = style.Height(height)
+	if interiorHeight > 0 {
+		style = style.Height(interiorHeight)
 	}
 
 	if frame.Content == nil {
 		return style.Render("")
 	}
 
+	contentWidth := 0
+	if frame.Content.Size.Width > 0 {
+		contentWidth = frame.Content.Size.Width
+	} else if interiorWidth > 0 {
+		contentWidth = max(interiorWidth-frame.Padding.Left-frame.Padding.Right, 0)
+	}
+
+	contentHeight := 0
+	if frame.Content.Size.Height > 0 {
+		contentHeight = frame.Content.Size.Height
+	} else if interiorHeight > 0 {
+		contentHeight = max(interiorHeight-frame.Padding.Top-frame.Padding.Bottom, 0)
+	}
+
 	contentView := *frame.Content
 	contentView.Size = bubbleviews.Size{
-		Width:  max(width-2-frame.Padding.Left-frame.Padding.Right, 0),
-		Height: max(height-2-frame.Padding.Top-frame.Padding.Bottom, 0),
+		Width:  contentWidth,
+		Height: contentHeight,
 	}
 
 	return style.Render(renderView(contentView))
@@ -130,6 +154,194 @@ func renderButton(button bubbleviews.ButtonView) string {
 	style = style.Padding(button.Padding.Top, button.Padding.Right, button.Padding.Bottom, button.Padding.Left)
 
 	return style.Render(button.Label)
+}
+
+func renderColumns(columns bubbleviews.ColumnsView, parentSize bubbleviews.Size) string {
+	if len(columns.Columns) == 0 {
+		return ""
+	}
+
+	widths := computeColumnWidths(columns, parentSize.Width)
+
+	rendered := make([]string, len(columns.Columns))
+	maxHeight := 0
+
+	for i, col := range columns.Columns {
+		if col.Content == nil {
+			rendered[i] = lipgloss.NewStyle().Width(widths[i]).Render("")
+		} else {
+			childView := *col.Content
+			childView.Size = bubbleviews.Size{
+				Width:  widths[i],
+				Height: parentSize.Height,
+			}
+
+			rendered[i] = renderView(childView)
+		}
+
+		if h := lipgloss.Height(rendered[i]); h > maxHeight {
+			maxHeight = h
+		}
+	}
+
+	segments := make([]string, 0, len(columns.Columns)*2-1)
+	for i, segment := range rendered {
+		if i > 0 && columns.Spacing > 0 {
+			segments = append(segments, lipgloss.NewStyle().Width(columns.Spacing).Render(""))
+		}
+
+		segments = append(segments, segment)
+	}
+
+	return lipgloss.JoinHorizontal(lipgloss.Top, segments...)
+}
+
+func computeColumnWidths(columns bubbleviews.ColumnsView, parentWidth int) []int {
+	count := len(columns.Columns)
+	widths := make([]int, count)
+
+	if count == 0 {
+		return widths
+	}
+
+	available := parentWidth
+	if available > 0 && count > 1 {
+		available -= columns.Spacing * (count - 1)
+		if available < 0 {
+			available = 0
+		}
+	}
+
+	flexible := make([]int, 0, count)
+
+	for i, col := range columns.Columns {
+		if col.Width > 0 {
+			if available > 0 {
+				if col.Width > available {
+					widths[i] = available
+				} else {
+					widths[i] = col.Width
+				}
+				available -= widths[i]
+			} else {
+				widths[i] = col.Width
+			}
+		} else {
+			flexible = append(flexible, i)
+		}
+	}
+
+	if available < 0 {
+		available = 0
+	}
+
+	share := 0
+	if len(flexible) > 0 && available > 0 {
+		share = available / len(flexible)
+	}
+
+	for _, idx := range flexible {
+		widths[idx] = share
+	}
+
+	remainder := 0
+	if len(flexible) > 0 {
+		remainder = available - share*len(flexible)
+		for i := 0; i < remainder && i < len(flexible); i++ {
+			widths[flexible[i]]++
+		}
+	}
+
+	return widths
+}
+
+func renderList(list bubbleviews.ListView, parentSize bubbleviews.Size) string {
+	lines := make([]string, 0, len(list.Items)+1)
+
+	availableWidth := parentSize.Width
+
+	if list.Title != "" {
+		style := lipgloss.NewStyle().Bold(true)
+		if color := string(list.TitleColor); color != "" {
+			style = style.Foreground(lipgloss.Color(color))
+		}
+
+		if availableWidth > 0 {
+			for _, wrapped := range wrapText(list.Title, availableWidth) {
+				lines = append(lines, style.Render(wrapped))
+			}
+		} else {
+			lines = append(lines, style.Render(list.Title))
+		}
+	}
+
+	itemStyle := lipgloss.NewStyle()
+	if color := string(list.ItemColor); color != "" {
+		itemStyle = itemStyle.Foreground(lipgloss.Color(color))
+	}
+
+	bullet := list.Bullet
+	if bullet == "" {
+		bullet = "- "
+	}
+	bulletWidth := lipgloss.Width(bullet)
+	textWidth := availableWidth - bulletWidth
+	if availableWidth <= 0 {
+		textWidth = -1
+	}
+	if textWidth < 1 && availableWidth > 0 {
+		textWidth = 1
+	}
+	bulletPadding := strings.Repeat(" ", max(bulletWidth, 0))
+
+	for _, item := range list.Items {
+		wrapped := []string{item}
+		if textWidth > 0 {
+			wrapped = wrapText(item, textWidth)
+		}
+
+		for i, segment := range wrapped {
+			prefix := bullet
+			if i > 0 {
+				prefix = bulletPadding
+			}
+			lines = append(lines, itemStyle.Render(prefix+segment))
+		}
+	}
+
+	if len(lines) == 0 {
+		return ""
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, lines...)
+}
+
+func wrapText(text string, width int) []string {
+	if width <= 0 {
+		return []string{text}
+	}
+
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return []string{""}
+	}
+
+	lines := make([]string, 0)
+	current := words[0]
+
+	for _, word := range words[1:] {
+		if lipgloss.Width(current+" "+word) <= width {
+			current += " " + word
+			continue
+		}
+
+		lines = append(lines, current)
+		current = word
+	}
+
+	lines = append(lines, current)
+
+	return lines
 }
 
 func mapBorderStyle(style bubbleviews.BorderStyle) *lipgloss.Border {

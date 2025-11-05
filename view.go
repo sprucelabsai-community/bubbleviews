@@ -11,6 +11,8 @@ type ViewChild struct {
 	Frame     *FrameView
 	Placement *PlacementView
 	Button    *ButtonView
+	Columns   *ColumnsView
+	List      *ListView
 }
 
 // Size represents a width and height measured in terminal cells.
@@ -38,6 +40,18 @@ type PlacementView struct {
 	Content    *View
 }
 
+// ColumnsView arranges child views horizontally.
+type ColumnsView struct {
+	Spacing int
+	Columns []ColumnView
+}
+
+// ColumnView represents a single column within a ColumnsView.
+type ColumnView struct {
+	Width   int // absolute width; 0 means share remaining space evenly
+	Content *View
+}
+
 // ButtonView renders a clickable or highlightable label.
 type ButtonView struct {
 	Label       string
@@ -50,6 +64,15 @@ type ButtonView struct {
 // Padding expresses the inset around content.
 type Padding struct {
 	Top, Right, Bottom, Left int
+}
+
+// ListView renders a titled bulleted list.
+type ListView struct {
+	Title      string
+	TitleColor Color
+	ItemColor  Color
+	Bullet     string
+	Items      []string
 }
 
 // BorderStyle enumerates supported frame and button borders.

@@ -15,6 +15,7 @@
 - Add new demos under `examples/` to showcase behaviour and validate the render pipeline. Use `go run ./examples/<name>` (with `GOCACHE=$(pwd)/.gocache` if needed).
 - Skip unit tests unless explicitly requested; document any noteworthy quirks or manual test steps alongside the examples.
 - For debugging or live preview, use the VS Code launch config “Run: Hello World Example” which opens an integrated terminal.
+- Every new example in `examples/` must be paired with a matching VS Code launch configuration.
 
 ## Collaboration Notes
 - Prefer expanding the render model over sprinkling conditional logic in renderers.
