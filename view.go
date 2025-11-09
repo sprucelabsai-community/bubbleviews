@@ -72,6 +72,7 @@ type FlexItem struct {
 	Node   Node
 	Width  int // used when Direction == FlexDirectionRow
 	Height int // used when Direction == FlexDirectionColumn
+	Grow   int // relative weight when sharing remaining width in rows
 }
 
 // FlexDirection expresses whether a FlexNode lays out children in a row or column.
@@ -88,6 +89,8 @@ type TextNode struct {
 	Color              Color
 	Bold               bool
 	Wrap               bool
+	Truncate           bool
+	TruncateSuffix     string
 	Align              Alignment
 	Prefix             string
 	ContinuationPrefix string
@@ -166,6 +169,33 @@ func (l ListView) Node() Node {
 	return FlexNode{
 		Direction: FlexDirectionColumn,
 		Spacing:   l.Spacing,
+		Items:     items,
+	}
+}
+
+// EqualWidthRow distributes its children evenly across the available width.
+type EqualWidthRow struct {
+	Items   []Node
+	Spacing int
+}
+
+// Node returns a flex row where each child receives an equal grow weight.
+func (r EqualWidthRow) Node() Node {
+	if len(r.Items) == 0 {
+		return FlexNode{Direction: FlexDirectionRow}
+	}
+
+	items := make([]FlexItem, len(r.Items))
+	for i, child := range r.Items {
+		items[i] = FlexItem{
+			Node: child,
+			Grow: 1,
+		}
+	}
+
+	return FlexNode{
+		Direction: FlexDirectionRow,
+		Spacing:   r.Spacing,
 		Items:     items,
 	}
 }

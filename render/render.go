@@ -355,6 +355,8 @@ func computeFlexWidths(flex bubbleviews.FlexNode, parentWidth int) []int {
 	}
 
 	flexible := make([]int, 0, count)
+	growWeights := make([]int, count)
+	totalGrow := 0
 
 	for i, item := range flex.Items {
 		if item.Width > 0 {
@@ -370,6 +372,10 @@ func computeFlexWidths(flex bubbleviews.FlexNode, parentWidth int) []int {
 			}
 		} else {
 			flexible = append(flexible, i)
+			if item.Grow > 0 {
+				growWeights[i] = item.Grow
+				totalGrow += item.Grow
+			}
 		}
 	}
 
@@ -377,20 +383,39 @@ func computeFlexWidths(flex bubbleviews.FlexNode, parentWidth int) []int {
 		available = 0
 	}
 
-	share := 0
-	if len(flexible) > 0 && available > 0 {
-		share = available / len(flexible)
-	}
-
-	for _, idx := range flexible {
-		widths[idx] = share
-	}
-
-	remainder := 0
 	if len(flexible) > 0 {
-		remainder = available - share*len(flexible)
-		for i := 0; i < remainder && i < len(flexible); i++ {
-			widths[flexible[i]]++
+		if totalGrow <= 0 {
+			share := 0
+			if available > 0 {
+				share = available / len(flexible)
+			}
+			for _, idx := range flexible {
+				widths[idx] = share
+			}
+			remainder := available - share*len(flexible)
+			for i := 0; i < remainder && i < len(flexible); i++ {
+				widths[flexible[i]]++
+			}
+		} else {
+			for _, idx := range flexible {
+				grow := growWeights[idx]
+				width := 0
+				if grow > 0 && available > 0 {
+					width = available * grow / totalGrow
+				}
+				widths[idx] = width
+			}
+			assigned := 0
+			for _, idx := range flexible {
+				assigned += widths[idx]
+			}
+			remainder := available - assigned
+			if remainder < 0 {
+				remainder = 0
+			}
+			for i := 0; i < remainder && i < len(flexible); i++ {
+				widths[flexible[i]]++
+			}
 		}
 	}
 
@@ -435,7 +460,12 @@ func renderText(text bubbleviews.TextNode, parentSize bubbleviews.Size) string {
 			linePrefix = continuation
 		}
 
-		line := style.Render(linePrefix + segment)
+		content := linePrefix + segment
+		if text.Truncate && width > 0 {
+			content = truncateString(content, width, text.TruncateSuffix)
+		}
+
+		line := style.Render(content)
 		if width > 0 {
 			line = lipgloss.PlaceHorizontal(width, mapHorizontal(text.Align), line)
 		}
@@ -472,6 +502,56 @@ func wrapText(text string, width int) []string {
 	lines = append(lines, current)
 
 	return lines
+}
+
+func truncateString(text string, width int, suffix string) string {
+	if width <= 0 || lipgloss.Width(text) <= width {
+		return text
+	}
+
+	if suffix == "" {
+		suffix = "..."
+	}
+
+	suffixWidth := lipgloss.Width(suffix)
+	if suffixWidth >= width {
+		return truncateRunes(text, width)
+	}
+
+	target := width - suffixWidth
+	var builder strings.Builder
+	currentWidth := 0
+
+	for _, r := range text {
+		rw := lipgloss.Width(string(r))
+		if currentWidth+rw > target {
+			break
+		}
+		builder.WriteRune(r)
+		currentWidth += rw
+	}
+
+	return builder.String() + suffix
+}
+
+func truncateRunes(text string, width int) string {
+	if width <= 0 {
+		return ""
+	}
+
+	var builder strings.Builder
+	currentWidth := 0
+
+	for _, r := range text {
+		rw := lipgloss.Width(string(r))
+		if currentWidth+rw > width {
+			break
+		}
+		builder.WriteRune(r)
+		currentWidth += rw
+	}
+
+	return builder.String()
 }
 
 func joinWithSpacing(segments []string, spacing int, join func(lipgloss.Position, ...string) string, pos lipgloss.Position) string {
