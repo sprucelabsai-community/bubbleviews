@@ -89,17 +89,18 @@ mutates the model it receives.
 - [`examples/even_rows`](examples/even_rows): demonstrates the `EqualWidthRow` helper and column-width percentages with truncated copy.
 - [`examples/dashboard_equalrow`](examples/dashboard_equalrow): recorder dashboard remix that chunks camera cards into even-width rows with clipped text.
 
+<div align="center">
+  <img src="examples/todos.png" alt="Tasks example" width="90%" />
+  <p><strong>Tasks view:</strong> Two-column layout with shared borders and `ListView` helpers.</p>
+</div>
+
 <table>
   <tr>
     <td width="55%">
-      <img src="examples/todos.png" alt="Tasks example" width="100%" />
-    </td>
-    <td width="45%" valign="top">
       <img src="examples/interactive.png" alt="Interactive example" width="100%" />
-      <ul>
-        <li><strong>Tasks view:</strong> Two-column layout with shared borders and bullet helpers.</li>
-        <li><strong>Interactive view:</strong> Focused commands with keyboard affordances, built entirely from `FlexNode`s.</li>
-      </ul>
+    </td>
+    <td width="45%" valign="middle">
+      <p><strong>Interactive view:</strong> Focused commands with keyboard affordances, built entirely from `FlexNode`s.</p>
     </td>
   </tr>
 </table>
