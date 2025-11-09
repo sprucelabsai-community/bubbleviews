@@ -11,7 +11,8 @@ events and repaint strings.
 <p align="center">
 <a href="examples/hello"><code>examples/hello</code></a> ·
 <a href="#render-model">Render Model</a> ·
-<a href="#examples">Examples</a>
+<a href="#examples">Examples</a> ·
+<a href="#why-bubbleviews">Why bubbleviews?</a>
 </p>
 
 ---
@@ -81,9 +82,21 @@ mutates the model it receives.
 - [`examples/interactivity`](examples/interactivity): keyboard-driven command list showcasing interactive focus/selection.
 - [`examples/dashboard`](examples/dashboard): recorder dashboard mock with dynamic camera columns and status metrics.
 - [`examples/ascii_art`](examples/ascii_art): centered ASCII banner using the `ASCIIArtNode` helper.
+- [`examples/even_rows`](examples/even_rows): demonstrates the `EqualWidthRow` helper and column-width percentages with truncated copy.
+- [`examples/dashboard_equalrow`](examples/dashboard_equalrow): recorder dashboard remix that chunks camera cards into even-width rows with clipped text.
 
 We’re vibe-coding this project—examples are our tests.
 
+Every new example ships with a matching VS Code launch configuration, so you can pick any entry from the **Run and Debug** panel and see the render model in action immediately.
+
+---
+
+## Why bubbleviews?
+
+- **Pure intent, no framework glue.** Your view tree is just Go structs; Bubble Tea and Lip Gloss come in only when it’s time to render or handle IO. That keeps layout logic portable and dead-simple to test (copy/paste a struct, compare strings).
+- **Render once, reuse everywhere.** Because the render model is a plain data description, you can unit-test it, serialize it, or feed it to alternative renderers later (imagine HTML or image outputs) without touching app logic.
+- **Composable building blocks.** Helpers like `EqualWidthRow`, `ListView`, and `EvenRowGrid` are sugar that emit the same three primitives (`BoxNode`, `FlexNode`, `TextNode`). You gain higher-level ergonomics without bloating the renderer with special cases.
+- **Fast iteration via examples.** Each feature lands as a runnable example plus launch config for vscode. Run `go run ./examples/<name>` (or select the launch config) and you’re staring at the exact render output you’ll ship—zero guesswork.
 
 ---
 
