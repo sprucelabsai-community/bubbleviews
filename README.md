@@ -8,6 +8,10 @@ events and repaint strings.
 - **Renderer second.** `render.Render` walks the model and emits Lip Gloss markup.
 - **Bubble Tea last.** The Bubble Tea program simply caches the latest render model.
 
+<div align="center">
+  <img src="examples/dashboard.png" alt="Recorder dashboard example" width="90%" />
+</div>
+
 <p align="center">
 <a href="examples/hello"><code>examples/hello</code></a> ·
 <a href="#render-model">Render Model</a> ·
@@ -22,7 +26,7 @@ events and repaint strings.
 ```sh
 git clone git@github.com:sprucelabsai-community/bubbleviews.git
 cd bubbleviews
-GOCACHE=$(pwd)/.gocache go run ./examples/hello
+go run ./examples/hello
 ```
 
 Prefer VS Code? Use the built-in launch config **Run: Hello World Example** and
@@ -84,6 +88,21 @@ mutates the model it receives.
 - [`examples/ascii_art`](examples/ascii_art): centered ASCII banner using the `ASCIIArtNode` helper.
 - [`examples/even_rows`](examples/even_rows): demonstrates the `EqualWidthRow` helper and column-width percentages with truncated copy.
 - [`examples/dashboard_equalrow`](examples/dashboard_equalrow): recorder dashboard remix that chunks camera cards into even-width rows with clipped text.
+
+<table>
+  <tr>
+    <td width="55%">
+      <img src="examples/todos.png" alt="Tasks example" width="100%" />
+    </td>
+    <td width="45%" valign="top">
+      <img src="examples/interactive.png" alt="Interactive example" width="100%" />
+      <ul>
+        <li><strong>Tasks view:</strong> Two-column layout with shared borders and bullet helpers.</li>
+        <li><strong>Interactive view:</strong> Focused commands with keyboard affordances, built entirely from `FlexNode`s.</li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
 We’re vibe-coding this project—examples are our tests.
 
